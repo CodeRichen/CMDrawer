@@ -364,8 +364,12 @@ ShowBrushStatus proc uses eax ebx ecx edx
 	
 	.elseif isPicker == 1
         invoke SetColor, LightGray
-        invoke crt_printf, offset szPickerButtonText
-	
+        invoke crt_printf, offset strPicker
+		
+	.elseif isFiller == 1
+		invoke SetColor, LightGray
+        invoke crt_printf, offset strFiller
+		
     .else
         ; 顏色的brush
 		invoke SetColor, dword ptr[drawColor]
@@ -694,6 +698,13 @@ KeyController proc uses ebx ecx esi edi hIn: DWORD, hOut: DWORD
 			.elseif al == 'P' || al == 'p'
 				mov isPicker, 1
 				mov isEraser, 0
+				mov isFiller, 0
+				invoke PlaySoundOnClick, offset szPlayOnClick
+				invoke ShowBrushStatus
+			.elseif al == 'F' || al == 'f'
+				mov isFiller, 1
+				mov isPicker, 0
+				mov isEraser, 0
 				invoke PlaySoundOnClick, offset szPlayOnClick
 				invoke ShowBrushStatus
 		.endif	
@@ -727,6 +738,9 @@ KeyController proc uses ebx ecx esi edi hIn: DWORD, hOut: DWORD
 					mov isPicker, 0
 					
 					invoke ShowBrushStatus
+				.elseif isFiller == 1
+					invoke FloodFill, ax, bx
+					mov isFiller, 0
 				.else	
 					.if prevButtonState == 0
 						mov prevButtonState, 1
@@ -1130,8 +1144,14 @@ KeyController proc uses ebx ecx esi edi hIn: DWORD, hOut: DWORD
 			.elseif ax >= WORKING_AREA_WIDTH+11 && ax <= WORKING_AREA_WIDTH+17 && bx >= WORKING_AREA_HEIGHT-6 && bx < WORKING_AREA_HEIGHT-3
 				mov isPicker, 1
 				mov isEraser, 0
+				mov isFiller, 0
 				invoke PlaySoundOnClick, offset szPlayOnClick
-
+			;Filler	
+			.elseif ax >= WORKING_AREA_WIDTH+3 && ax <= WORKING_AREA_WIDTH+9 && bx >= WORKING_AREA_HEIGHT-11 && bx < WORKING_AREA_HEIGHT-8
+				mov isFiller, 1
+				mov isEraser, 0
+				mov isPicker, 0
+				invoke PlaySoundOnClick, offset szPlayOnClick
 			.endif
 				 ; 儲存本次狀態供下次比對
     			mov prevButtonState, 0
@@ -1211,6 +1231,145 @@ GetInput proc uses ebx esi edi, lpOutputText: DWORD, lpInputText: DWORD
 
 	Ret
 GetInput endp
+
+FloodFill proc uses eax ecx edx x:DWORD, y:DWORD
+    LOCAL hOut: DWORD
+    LOCAL coord: COORD
+    LOCAL chi: CHAR_INFO
+    LOCAL bufferSize: COORD
+    LOCAL bufferCoord: COORD
+    LOCAL readRegion: SMALL_RECT
+    LOCAL originColor: WORD
+
+    ; 取得 hOut
+    invoke GetStdHandle, STD_OUTPUT_HANDLE
+    mov hOut, eax
+
+    ; ==== 建立座標結構 ====
+    mov eax, x
+    mov word ptr [coord.x], ax
+    mov eax, y
+    mov word ptr [coord.y], ax
+
+    mov word ptr [bufferSize.x], 1
+    mov word ptr [bufferSize.y], 1
+    mov word ptr [bufferCoord.x], 0
+    mov word ptr [bufferCoord.y], 0
+
+    mov eax, x
+    mov word ptr [readRegion.Left], ax
+    mov word ptr [readRegion.Right], ax
+    mov eax, y
+    mov word ptr [readRegion.Top], ax
+    mov word ptr [readRegion.Bottom], ax
+
+    ; ==== 讀取該點原本的顏色 ====
+    invoke ReadConsoleOutput, hOut, addr chi, addr bufferSize, addr bufferCoord, addr readRegion
+    movzx eax, chi.Attributes
+    and eax, 0Fh
+    mov originColor, ax
+
+    ; ==== 檢查是否顏色相同 ====
+    mov eax, drawColor
+    and eax, 0Fh
+    cmp ax, originColor
+    je @@Exit
+
+    ; ==== 畫自己 ====
+    invoke SetConsoleTextAttribute, hOut, drawColor
+    mov eax, y
+	add eax, 2             ; 補償畫布從第3行開始
+	invoke PutCursorToPos, x, eax
+    invoke crt_printf, offset szToDraw
+
+    ; ==== 畫上 ====
+    mov eax, y
+    dec eax
+    invoke FillCellIfMatch, x, eax, originColor
+
+    ; ==== 畫下 ====
+    mov eax, y
+    inc eax
+    invoke FillCellIfMatch, x, eax, originColor
+
+    ; ==== 畫左 ====
+    mov eax, x
+    dec eax
+    invoke FillCellIfMatch, eax, y, originColor
+
+    ; ==== 畫右 ====
+    mov eax, x
+    inc eax
+    invoke FillCellIfMatch, eax, y, originColor
+
+@@Exit:
+    ret
+FloodFill endp
+
+
+
+FillCellIfMatch proc uses eax ecx edx x:DWORD, y:DWORD, matchColor:WORD
+    LOCAL coord: COORD
+    LOCAL chi: CHAR_INFO
+    LOCAL bufferSize: COORD
+    LOCAL bufferCoord: COORD
+    LOCAL readRegion: SMALL_RECT
+    LOCAL hOut: DWORD
+    LOCAL currentColor: WORD
+
+    ; 邊界判斷
+    cmp x, 1
+    jl @@Exit
+    cmp x, WORKING_AREA_WIDTH
+    jg @@Exit
+    cmp y, 3
+    jl @@Exit
+    cmp y, WORKING_AREA_HEIGHT
+    jg @@Exit
+
+    ; 取得 hOut
+    invoke GetStdHandle, STD_OUTPUT_HANDLE
+    mov hOut, eax
+
+    ; 準備座標
+    mov eax, x
+    mov word ptr [coord.x], ax
+    mov eax, y
+    mov word ptr [coord.y], ax
+
+    mov word ptr [bufferSize.x], 1
+    mov word ptr [bufferSize.y], 1
+    mov word ptr [bufferCoord.x], 0
+    mov word ptr [bufferCoord.y], 0
+
+    mov eax, x
+    mov word ptr [readRegion.Left], ax
+    mov word ptr [readRegion.Right], ax
+    mov eax, y
+    mov word ptr [readRegion.Top], ax
+    mov word ptr [readRegion.Bottom], ax
+
+    invoke ReadConsoleOutput, hOut, addr chi, addr bufferSize, addr bufferCoord, addr readRegion
+    movzx eax, chi.Attributes
+    and eax, 0Fh
+    mov currentColor, ax
+
+    mov ax, currentColor
+	cmp ax, matchColor
+    jne @@Exit
+
+    ; 畫這格
+    invoke SetConsoleTextAttribute, hOut, drawColor
+    mov eax, y
+	add eax, 2
+	invoke PutCursorToPos, x, eax
+
+    invoke crt_printf, offset szToDraw
+
+@@Exit:
+    ret
+FillCellIfMatch endp
+
 
 ImportImageEvent proc uses ebx esi edi
 

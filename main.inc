@@ -36,6 +36,10 @@ SaveCanvasSnapshot				proto
 RedrawCanvas					proto			:DWORD, :DWORD
 ExportImageEvent				proto
 ImportImageEvent 				proto
+FloodFill 						proto			:DWORD, :DWORD
+FillCellIfMatch 				proto 			:DWORD, :DWORD, :WORD
+
+
 
 ClearBuffer						proto			:DWORD, :DWORD
 SaveToHistory					proto
@@ -186,5 +190,8 @@ ReadConsoleOutputAttribute 		proto 			:DWORD, :DWORD, :DWORD, :DWORD, :DWORD
 	; 判斷是否為橡皮擦
 	isEraser       dd  0
 	isPicker        db 0
+	isFiller 		db 0
 	strEraser		db "[Eraser]: Size %d ", 0
+	strPicker 		db "[Picker]: ", 0
+	strFiller		db "[Filler]: ", 0
 	fmtBrushStatus db  " [brush]: Size %d", 0

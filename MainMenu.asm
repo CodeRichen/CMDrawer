@@ -36,6 +36,7 @@ VerticalBorderConstruct		proto	:DWORD, :DWORD, :DWORD
 	szImportButtonText		db			"Import", 0
 	szEraserButtonText      db			"Eraser", 0
 	szPickerButtonText 		db			"Picker", 0
+	szFillerButtonText 		db          "Filler", 0
 	szSizeText				db			"SIZE:", 0
 	szColorText				db			"COLORS:", 0
 	szProgramVersion		db			"CMDrawer", 0
@@ -311,6 +312,18 @@ SpecialButtonsCreate proc uses ecx esi edi
 	invoke PutCursorToPos, WORKING_AREA_WIDTH+11, WORKING_AREA_HEIGHT-5
 	invoke crt_printf, offset szPickerButtonText
 	invoke SetConsoleTextAttribute, hOut, interfaceBorderColor
+
+	;Filler Button Creating
+	invoke VerticalBorderConstruct, 3, WORKING_AREA_WIDTH+2, WORKING_AREA_HEIGHT-11
+	invoke HorizontalBorderConstruct, 6, WORKING_AREA_WIDTH+3, WORKING_AREA_HEIGHT-12
+	invoke VerticalBorderConstruct, 3, WORKING_AREA_WIDTH+9, WORKING_AREA_HEIGHT-11
+	invoke HorizontalBorderConstruct, 6, WORKING_AREA_WIDTH+3, WORKING_AREA_HEIGHT-8
+	
+	invoke SetConsoleTextAttribute, hOut, interfaceFontColor
+	invoke PutCursorToPos, WORKING_AREA_WIDTH+3, WORKING_AREA_HEIGHT-10
+	invoke crt_printf, offset szFillerButtonText
+	invoke SetConsoleTextAttribute, hOut, interfaceBorderColor
+
 	Ret
 SpecialButtonsCreate endp
 
