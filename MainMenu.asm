@@ -60,6 +60,11 @@ VerticalBorderConstruct		proto	:DWORD, :DWORD, :DWORD
 	interfaceBorderColor		dd			LightGray ; define in main.inc
 
 	szEmptyLine				db		WORKING_AREA_WIDTH		dup(32), 0
+	szBGColorSetText     db  "Background", 0       ; 背景文字
+	szSetBGButtonText    db  "Set BG",     0       ; 設定背景按鈕文字
+	szBackgroundRow db '                                                                                                          ', 0
+
+
 
 .code
 MenuCreate proc	uses ecx esi edi
@@ -354,6 +359,18 @@ SpecialButtonsCreate proc uses ecx esi edi
 	invoke PutCursorToPos, 18, WORKING_AREA_HEIGHT+9
 	invoke crt_printf, offset szrainbowText
 	invoke SetConsoleTextAttribute, hOut, interfaceBorderColor
+
+	; Background Button Creating
+invoke VerticalBorderConstruct,       3, WORKING_AREA_WIDTH +  2, WORKING_AREA_HEIGHT - 10
+invoke HorizontalBorderConstruct,    12, WORKING_AREA_WIDTH +  3, WORKING_AREA_HEIGHT - 11
+invoke VerticalBorderConstruct,       3, WORKING_AREA_WIDTH + 14, WORKING_AREA_HEIGHT - 10
+invoke HorizontalBorderConstruct,    12, WORKING_AREA_WIDTH +  3, WORKING_AREA_HEIGHT -  7
+
+invoke SetConsoleTextAttribute, hOut, interfaceFontColor
+invoke PutCursorToPos,        WORKING_AREA_WIDTH + 3, WORKING_AREA_HEIGHT - 9
+invoke crt_printf,            offset szBGColorSetText
+invoke SetConsoleTextAttribute, hOut, interfaceBorderColor
+
 
 	Ret
 SpecialButtonsCreate endp

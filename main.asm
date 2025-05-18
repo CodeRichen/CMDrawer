@@ -734,10 +734,47 @@ ShowBrushStatus proc uses eax ebx ecx edx
 
 	invoke SetColor, dword ptr[drawColor]  ; 把顏色變回原來畫畫的顏色
     ret
-ShowBrushStatus endp
 
+	ShowBrushStatus endp
 
+	;這裡呼叫的好像會破壞ecx 故用eax ebx作為迴圈計數
+UpdateBackgroundColor proc uses eax ebx ecx edx
+    LOCAL hOut:DWORD
+    LOCAL coord:COORD
 
+    invoke GetStdHandle, STD_OUTPUT_HANDLE
+    mov hOut, eax
+
+    mov eax, 38            ; 外層迴圈計數器 (列數)
+    mov coord.y, 3         ; 起始 y
+
+RowLoop:
+    push eax               ; 保存外層計數器
+
+    mov ebx, 120           ; 內層迴圈計數器 (欄數)
+    mov coord.x, 1         ; 起始 x
+
+ColumnLoop:
+    movzx edx, coord.y
+    shl edx, 16
+    movzx ecx, coord.x
+    or edx, ecx
+    invoke SetConsoleCursorPosition, hOut, edx
+
+    invoke SetColor, dword ptr [drawColor]
+    invoke crt_printf, offset szToDraw
+
+    inc coord.x
+    dec ebx
+    jnz ColumnLoop
+
+    pop eax                ; 恢復外層計數器
+    inc coord.y
+    dec eax
+    jnz RowLoop
+
+    ret
+UpdateBackgroundColor endp
 
 KeyController proc uses ebx ecx esi edi hIn: DWORD, hOut: DWORD
 	;picker用; === 取得指定位置的背景顏色 ===
@@ -1597,6 +1634,14 @@ KeyController proc uses ebx ecx esi edi hIn: DWORD, hOut: DWORD
 				mov isEraser, 0
 				mov isPicker, 0
 				invoke PlaySoundOnClick, offset szPlayOnClick
+
+				; BACKGROUND COLOR SET
+			.elseif ax >= WORKING_AREA_WIDTH+3 && ax <= WORKING_AREA_WIDTH+14 && bx >= WORKING_AREA_HEIGHT-10 && bx <= WORKING_AREA_HEIGHT-7
+			   invoke PlaySoundOnClick, offset szPlayOnClick
+			   mov eax, drawColor                ; 取得目前畫筆顏色
+			   mov dword ptr[bgColor], eax       ; 將背景顏色改成目前顏色
+			  invoke UpdateBackgroundColor      ; 呼叫更新背景顏色
+
 
 			; RAINBOW
 			.elseif ax >= 18 && ax <= 25 && bx >= WORKING_AREA_HEIGHT+8 && bx < WORKING_AREA_HEIGHT+11

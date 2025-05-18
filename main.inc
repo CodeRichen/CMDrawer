@@ -148,6 +148,7 @@ ReadConsoleOutputAttribute 		proto 			:DWORD, :DWORD, :DWORD, :DWORD, :DWORD
 	hConsoleOutput    HANDLE ?
 	; Temp buffer
 	tempBuffer        CHAR_INFO HISTORY_SIZE dup(<>)
+	bgColor DWORD ?
 	
 .data	
 	ConsoleRecord			INPUT_RECORD	<>
