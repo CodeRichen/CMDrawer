@@ -745,14 +745,14 @@ UpdateBackgroundColor proc uses eax ebx ecx edx
     invoke GetStdHandle, STD_OUTPUT_HANDLE
     mov hOut, eax
 
-    mov eax, 38            ; 外層迴圈計數器 (列數)
-    mov coord.y, 3         ; 起始 y
+    mov eax, WORKING_AREA_HEIGHT - 2     
+    mov coord.y, 3                       
 
 RowLoop:
-    push eax               ; 保存外層計數器
+    push eax                             
 
-    mov ebx, 120           ; 內層迴圈計數器 (欄數)
-    mov coord.x, 1         ; 起始 x
+    mov ebx, WORKING_AREA_WIDTH         
+    mov coord.x, 1                       
 
 ColumnLoop:
     movzx edx, coord.y
@@ -768,13 +768,14 @@ ColumnLoop:
     dec ebx
     jnz ColumnLoop
 
-    pop eax                ; 恢復外層計數器
+    pop eax                             
     inc coord.y
     dec eax
     jnz RowLoop
 
     ret
 UpdateBackgroundColor endp
+
 
 KeyController proc uses ebx ecx esi edi hIn: DWORD, hOut: DWORD
 	;picker用; === 取得指定位置的背景顏色 ===
